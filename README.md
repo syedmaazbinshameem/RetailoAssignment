@@ -86,62 +86,49 @@ SET House = Lockups.Level_3_House
 WHERE Opportunity_Owner = Bookings.Opportunity_Owner;
 
 -- Question 3
--- Following code is a collection of multiple codes merged to replicate SUMIFs and projections. Projections are based on the proportion of Bookings done in a particular quarter in a Fiscal Year.
--- Projections code is essentially mixing three parts of the formula:
+USE Retailo;
 
--- Projected Q3-FY2016 = (Share of Q3-FY 2015 in Total Bookings for Q3-FY2015) x Total Bookings in Q3-FY2016
--- Total Bookings in Q3-FY2016 = (Q3-FY2015/Q2-FY2015) x Q2-FY2016 (Using growth rate of Q3-FY 2015 to project total bookings in Q3-2016)
+-- Calculating Totals for Each Quarter Q1-2015 to Q2-2016
+SET @Total_Q1_2015 = (SELECT SUM(IF(Fiscal_Period_Booked = 'Q1-2015',Bookings,0)) FROM Bookings);
+SET @Total_Q2_2015 = (SELECT SUM(IF(Fiscal_Period_Booked = 'Q2-2015',Bookings,0)) FROM Bookings);
+SET @Total_Q3_2015 = (SELECT SUM(IF(Fiscal_Period_Booked = 'Q3-2015',Bookings,0)) FROM Bookings);
+SET @Total_Q4_2015 = (SELECT SUM(IF(Fiscal_Period_Booked = 'Q4-2015',Bookings,0)) FROM Bookings);
+SET @Total_Q1_2016 = (SELECT SUM(IF(Fiscal_Period_Booked = 'Q1-2016',Bookings,0)) FROM Bookings);
+SET @Total_Q2_2016 = (SELECT SUM(IF(Fiscal_Period_Booked = 'Q2-2016',Bookings,0)) FROM Bookings);
 
--- This piece of code calculates Q3-FY2015:
--- SUM(IF(Fiscal_Period_Booked = 'Q3-2015',Bookings,0)) AS 'Actual Q3-2015'
+-- Calculating Growth Rate for Q3-2015 and Q4-2015
+SET @Growth_Rate_Q3_2015 = @Total_Q3_2015/@Total_Q2_2015;
+SET @Growth_Rate_Q4_2015 = @Total_Q4_2015/@Total_Q3_2015;
 
--- This piece of code calculates Total Bookings for Q3-FY2015
--- (SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')
-
--- This piece of code calculates projected total of Q3-2016
--- ((SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2015')) *(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2016')
-
--- Combining these three pieces of code into one single line using the above mentioned formula, we can obtain the table shown in the Excel Output File.
--- The second part of the code produces the Total Row at the end of the query
-
-USE retailo;
-SELECT 
-	Level_2_Area AS Area,
-	SUM(IF(Fiscal_Period_Booked = 'Q1-2015',Bookings,0)) AS 'Actual Q1-2015',
-    SUM(IF(Fiscal_Period_Booked = 'Q2-2015',Bookings,0)) AS 'Actual Q2-2015',
-    SUM(IF(Fiscal_Period_Booked = 'Q3-2015',Bookings,0)) AS 'Actual Q3-2015',
-    SUM(IF(Fiscal_Period_Booked = 'Q4-2015',Bookings,0)) AS 'Actual Q4-2015',
-    SUM(IF(Fiscal_Period_Booked = 'Q1-2016',Bookings,0)) AS 'Actual Q1-2016',
-    SUM(IF(Fiscal_Period_Booked = 'Q2-2016',Bookings,0)) AS 'Actual Q2-2016',
-	((SUM(IF(Fiscal_Period_Booked = 'Q3-2015',Bookings,0)))/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')) * ((SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2015')) *(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2016') AS 'Forecast Q3-2016',
-    ((SUM(IF(Fiscal_Period_Booked = 'Q4-2015',Bookings,0)))/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q4-2015'))* ((SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q4-2015')/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')) *((SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2015')) *(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2016') AS 'Forecast Q4-2016',
-    (SUM(IF(Fiscal_Period_Booked = 'Q1-2015',Bookings,0))+SUM(IF(Fiscal_Period_Booked = 'Q2-2015',Bookings,0))+SUM(IF(Fiscal_Period_Booked = 'Q3-2015',Bookings,0))+SUM(IF(Fiscal_Period_Booked = 'Q4-2015',Bookings,0))) AS 'Total FY 2015',
-    (SUM(IF(Fiscal_Period_Booked = 'Q1-2016',Bookings,0))+SUM(IF(Fiscal_Period_Booked = 'Q2-2016',Bookings,0))+((SUM(IF(Fiscal_Period_Booked = 'Q3-2015',Bookings,0)))/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')) * ((SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2015')) *(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2016')+((SUM(IF(Fiscal_Period_Booked = 'Q4-2015',Bookings,0)))/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q4-2015'))* ((SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q4-2015')/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')) *((SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2015')) *(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2016')) AS 'Total FY 2016',
-    
--- -- This code calculates YOY growth for the Areas    
-    ROUND(((SUM(IF(Fiscal_Period_Booked = 'Q1-2016',Bookings,0))+SUM(IF(Fiscal_Period_Booked = 'Q2-2016',Bookings,0))+((SUM(IF(Fiscal_Period_Booked = 'Q3-2015',Bookings,0)))/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')) * ((SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2015')) *(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2016')+((SUM(IF(Fiscal_Period_Booked = 'Q4-2015',Bookings,0)))/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q4-2015'))* ((SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q4-2015')/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')) *((SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2015')) *(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2016'))/(SUM(IF(Fiscal_Period_Booked = 'Q1-2015',Bookings,0))+SUM(IF(Fiscal_Period_Booked = 'Q2-2015',Bookings,0))+SUM(IF(Fiscal_Period_Booked = 'Q3-2015',Bookings,0))+SUM(IF(Fiscal_Period_Booked = 'Q4-2015',Bookings,0))))-1,2) AS 'YoY Growth'
-From Bookings
-GROUP BY Level_2_Area
-
--- Second part of the same code, this calculates the total row at the end
-
-UNION ALL
+-- Projecting Total Quarterly Bookings for Q3-2016 and Q4-2016 using Growth Rates for Q3-2015 and Q4-2015 Respectively
+SET @Total_Q3_2016 = @Total_Q2_2016 * @Growth_Rate_Q3_2015;
+SET @Total_Q4_2016 = @Total_Q3_2016 * @Growth_Rate_Q4_2015;
 
 SELECT
-	'Total',
-	SUM(IF(Fiscal_Period_Booked = 'Q1-2015',Bookings,0)) AS 'Actual Q1-2015',
+	Level_2_Area AS Area,
+    SUM(IF(Fiscal_Period_Booked = 'Q1-2015',Bookings,0)) AS 'Actual Q1-2015',
     SUM(IF(Fiscal_Period_Booked = 'Q2-2015',Bookings,0)) AS 'Actual Q2-2015',
     SUM(IF(Fiscal_Period_Booked = 'Q3-2015',Bookings,0)) AS 'Actual Q3-2015',
     SUM(IF(Fiscal_Period_Booked = 'Q4-2015',Bookings,0)) AS 'Actual Q4-2015',
     SUM(IF(Fiscal_Period_Booked = 'Q1-2016',Bookings,0)) AS 'Actual Q1-2016',
     SUM(IF(Fiscal_Period_Booked = 'Q2-2016',Bookings,0)) AS 'Actual Q2-2016',
-    ((SUM(IF(Fiscal_Period_Booked = 'Q3-2015',Bookings,0)))/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')) * ((SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2015')) *(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2016') AS 'Forecast Q3-2016',
-    ((SUM(IF(Fiscal_Period_Booked = 'Q4-2015',Bookings,0)))/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q4-2015'))* ((SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q4-2015')/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')) *((SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2015')) *(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2016') AS 'Forecast Q4-2016',
-	(SUM(IF(Fiscal_Period_Booked = 'Q1-2015',Bookings,0))+SUM(IF(Fiscal_Period_Booked = 'Q2-2015',Bookings,0))+SUM(IF(Fiscal_Period_Booked = 'Q3-2015',Bookings,0))+SUM(IF(Fiscal_Period_Booked = 'Q4-2015',Bookings,0))) AS 'Total FY 2015',
-    (SUM(IF(Fiscal_Period_Booked = 'Q1-2016',Bookings,0))+SUM(IF(Fiscal_Period_Booked = 'Q2-2016',Bookings,0))+((SUM(IF(Fiscal_Period_Booked = 'Q3-2015',Bookings,0)))/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')) * ((SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2015')) *(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2016')+((SUM(IF(Fiscal_Period_Booked = 'Q4-2015',Bookings,0)))/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q4-2015'))* ((SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q4-2015')/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')) *((SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2015')) *(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2016')) AS 'Total FY 2016',
+    ROUND(((SUM(IF(Fiscal_Period_Booked = 'Q3-2015',Bookings,0))/@Total_Q3_2015) * @Total_Q3_2016),0) AS 'Forecast Q3-2016',
+    ROUND(((SUM(IF(Fiscal_Period_Booked = 'Q4-2015',Bookings,0))/@Total_Q4_2015) * @Total_Q4_2016),0) AS 'Forecast Q4-2016'
+FROM Bookings
+GROUP BY Area
 
--- This code calculates YOY growth for the Total row
-    ROUND(((SUM(IF(Fiscal_Period_Booked = 'Q1-2016',Bookings,0))+SUM(IF(Fiscal_Period_Booked = 'Q2-2016',Bookings,0))+((SUM(IF(Fiscal_Period_Booked = 'Q3-2015',Bookings,0)))/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')) * ((SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2015')) *(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2016')+((SUM(IF(Fiscal_Period_Booked = 'Q4-2015',Bookings,0)))/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q4-2015'))* ((SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q4-2015')/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')) *((SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q3-2015')/(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2015')) *(SELECT SUM(Bookings) FROM Bookings WHERE Fiscal_Period_Booked = 'Q2-2016'))/(SUM(IF(Fiscal_Period_Booked = 'Q1-2015',Bookings,0))+SUM(IF(Fiscal_Period_Booked = 'Q2-2015',Bookings,0))+SUM(IF(Fiscal_Period_Booked = 'Q3-2015',Bookings,0))+SUM(IF(Fiscal_Period_Booked = 'Q4-2015',Bookings,0))))-1,2) AS 'YoY Growth'
+-- Adding a Total Row in the end
+UNION
+SELECT 
+	'Total',
+	ROUND(@Total_Q1_2015, 0),
+    ROUND(@Total_Q2_2015, 0),
+    ROUND(@Total_Q3_2015, 0),
+    ROUND(@Total_Q4_2015, 0),
+    ROUND(@Total_Q1_2016, 0),
+    ROUND(@Total_Q2_2016, 0),
+    ROUND(((SUM(IF(Fiscal_Period_Booked = 'Q3-2015',Bookings,0))/@Total_Q3_2015) * @Total_Q3_2016),0) AS 'Forecast Q3-2016',
+    ROUND(((SUM(IF(Fiscal_Period_Booked = 'Q4-2015',Bookings,0))/@Total_Q4_2015) * @Total_Q4_2016),0) AS 'Forecast Q4-2016'
 FROM Bookings
 
 
